@@ -1,16 +1,16 @@
 const {net} = require('./shared/network.js');
-const {Game, ai} = require('./shared/othello.js');
+const {Game, ai} = require('./othello.js');
 const tf = require('@tensorflow/tfjs-node');
 
 
 let boards = [];
 let moves = [];
-for(let i = 0; i < 10; i++){
+for(let i = 0; i < 100; i++){
     const game = new Game();
     const data = game.playAndGetData(ai.mcts(5));
     boards.push(...data.boards);
     moves.push(...data.moves);
-    console.log(`game ${i} ended`);
+    if(i % 10 == 9) console.log(`game ${i+1} ended`);
 }
 console.log('games ended');
 
@@ -74,8 +74,8 @@ net.fit(
     timeGame(ai.ann(net), "ANN");
     timeGame(ai.ann_weighted(net), "ann_weighted");
 
-    timeGame(ai.mcts(4, ai.ann_weighted(net)), "MCTS+ANN");
-    timeGame(ai.mcts(4, ai.ann_weighted_cached(net)), "MCTS+ANN+cache");
+    //timeGame(ai.mcts(4, ai.ann_weighted(net)), "MCTS+ANN");
+    //timeGame(ai.mcts(4, ai.ann_weighted_cached(net)), "MCTS+ANN+cache");
 
     net.save('file://shared/model');
  })

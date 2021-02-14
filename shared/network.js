@@ -19,7 +19,6 @@ test.compile({
 
 async function update(file, weights){
     let model = await tf.loadLayersModel(`file://${file}/model.json`);
-    console.log(`layer count: ${model.layers.length}; weight count: ${weights.length}`);
     model.layers.forEach((layer, i) => {
         layer.setWeights(weights[i].map((arr)=>tf.tensor(arr)));
     })

@@ -16,8 +16,6 @@ app .use((req, res, next) => {
     	next();
     })
     .post("/model", (req, res, next) => {
-    	console.log("POST request for the model*");
-    	console.log(req.body);
 
     	update("shared/model", req.body.weights).then(()=>{
     		res.status(200).send("OK");

@@ -5,7 +5,7 @@ const tf = require('@tensorflow/tfjs-node');
 
 let boards = [];
 let moves = [];
-for(let i = 0; i < 100; i++){
+for(let i = 0; i < 10; i++){
     const game = new Game();
     const data = game.playAndGetData(ai.mcts(5));
     boards.push(...data.boards);
@@ -31,7 +31,7 @@ net.fit(
     tf.tensor(boards),
     tf.tensor(moves).reshape([-1,64]),
     {
-       epochs: 20,
+       epochs: 2,
        batchSize: 60,
        shuffle: true,
        validationSplit: 0.1
@@ -70,14 +70,17 @@ net.fit(
 */
     timeGame(ai.random, "random");
     timeGame(ai.mcts(10), "MCTS-10");
-    timeGame(ai.mcts(100), "MCTS-100");
-    timeGame(ai.ann(net), "ANN");
+    // timeGame(ai.mcts(100), "MCTS-100");
+    // timeGame(ai.ann(net), "ANN");
+    timeGame(ai.mcts_ann(1, net), "mcts_ann-1");
+    timeGame(ai.mcts_ann(5, net), "mcts_ann-5");
+    timeGame(ai.mcts_ann(10, net), "mcts_ann-10");
     timeGame(ai.ann_weighted(net), "ann_weighted");
 
     //timeGame(ai.mcts(4, ai.ann_weighted(net)), "MCTS+ANN");
     //timeGame(ai.mcts(4, ai.ann_weighted_cached(net)), "MCTS+ANN+cache");
 
-    net.save('file://shared/model');
+    //net.save('file://shared/model');
  })
 .catch(err =>{
    console.log('An error! ');

@@ -120,7 +120,8 @@ Game.prototype.takeMove = function(x, y){
         this.player ^= 3;
         this.calculateValidMoves(this.player);
     }else{
-        console.log(x+ ", " + y);
+        //console.log(x+ ", " + y);
+        throw new Error(x+ ", " + y + " is not a valid move!");
     }
     if(Object.keys(this.validMoves).length === 0){
         this.player ^= 3;
@@ -283,7 +284,56 @@ var ann_weighted_cached = (net) => {
         return 0;
     }
 };
+var mcts_ann = (itterations, net) => (function(posibleMoves, game){
+    var games = [];
+    var moves = [];
+    for(let index in posibleMoves){
+        var g = new Game(game);
+        g.takeMove(index);
+        for(let i = 0 ; i < itterations; i++){
+            games.push(new Game(g));
+            moves.push(index);
+        }
+    }
+    let activeGames = games;
+    do{
+        activeGames = activeGames.filter(g => g.player);
+        if(activeGames.length)
+            var results = net.predict(tf.tensor(activeGames.map(g => g.getBoardDesc()))).arraySync();
+        for(let i = 0; i < activeGames.length; i++){
+            const g = activeGames[i];
+            var sum = 0;
+            for(let index in g.validMoves){
+                sum += results[i][index];
+            }
+            var rand = Math.random() * sum;
+            for(let index in g.validMoves){
+                rand -= results[i][index];
+                if(rand < 0){
+                    g.takeMove(+index);
+                    break;
+                }
+            }
+        }
+    }while(activeGames.length);
 
+    let values = {};
+    for(let i = 0; i < games.length; i++){
+        values[moves[i]] = values[moves[i]] || 0;
+        games[i].board.forEach(row =>
+            row.forEach(cell =>
+                values[moves[i]] += +(cell = game.player)));
+    }
+    let bestMove, best = -1;
+    for(let index in posibleMoves){
+        if(best < values[index]){
+            bestMove = +index;
+            best = values[index];
+        }
+    }
+    
+    return bestMove;
+});
 
 
 exports.Game = Game
@@ -295,6 +345,7 @@ exports.ai = {
     human: human,
     ann: ann,
     ann_weighted, ann_weighted,
-    ann_weighted_cached: ann_weighted_cached
+    ann_weighted_cached: ann_weighted_cached,
+    mcts_ann: mcts_ann
 }
 

@@ -1,29 +1,28 @@
-function getData({
-	games = 5,
-	log = false,
-	use_symmetry = false,
-	bot = mcts(10)
-}={}){
-	let boards = [];
-	let moves = [];
-	for(let i = 0; i < games; i++){
-		const game = new Game();
-		const data = game.playAndGetData(bot);
-		boards.push(...data.boards);
-		moves.push(...data.moves);
-		if(log) console.log(`game ${i+1} ended`);
-	}
-	if(use_symmetry){
-		console.log(`boards.length = ${boards.length}`);
-		boards.push(...boards.map(b=>b.slice().reverse()));
-		moves.push(...moves.map(b=>b.slice().reverse()));
-		boards.push(...boards.map(b=>b.map(r=>r.slice().reverse())));
-		moves.push(...moves.map(b=>b.map(r=>r.slice().reverse())));
-		console.log(`boards.length = ${boards.length}`);
-	}
-	return [boards, moves];
+function getData(){
+	return [[], []];
 }
 
+function postToNetwork(model, url){
+	return new Promise((resolve, reject) => {
+		let weights = [];
+		model.layers.map((layer) =>
+			layer.getWeights().map(w => w.arraySync())
+		);
+		$.ajax({
+			type: "POST",
+			url: url,
+			dataType: 'json',
+			contentType: 'application/json',
+			data: JSON.stringify({weights: weights}),
+			success: (data, status)=>{
+				resolve({data, status});
+			},
+			error: (jqXHR, textStatus, errorThrown)=>{
+				reject({jqXHR, textStatus, errorThrown});
+			}
+		});
+	});
+};
 
 async function run(){
 	console.log("running script");
@@ -37,13 +36,13 @@ async function run(){
 	});
 
 	// generate a new dataset
-	let [boards, moves] = getData({games: 10, bot: mcts_ann(5, model), use_symmetry: true, log: true});
+	let [inputs, outputs] = getData();
 
 	console.log("Finished data generation, on to training");
 
 	await model.fit(
-		tf.tensor(boards),
-		tf.tensor(moves).reshape([-1,64]),
+		tf.tensor(inputs),
+		tf.tensor(outputs).reshape([-1,64]),
 		{
 			epochs: 10,
 			batchSize: 60,
@@ -51,26 +50,8 @@ async function run(){
 			validationSplit: 0.2
 		}
 	)
-	for(let i = 0; i < 10; i++){
-		let game = new Game();
-		console.log(game.play([0, random, ann(model)]));
-	}
-	let weights = [];
-	model.layers.forEach((layer)=>{
-		weights.push(layer.getWeights().map(w => w.arraySync()));
-	});
-	console.log("weights: ");
-	console.log(weights);
-	$.ajax({
-		type: "POST",
-		url: "/model",
-		dataType: 'json',
-		contentType: 'application/json',
-		data: JSON.stringify({weights: weights}),
-		success: (data, status)=>{
-			console.log(status);
-			console.log(data);
-		}
-	});
+	
+	await postToNetwork(model, "/model");
+	
 	console.log("script over");
 }

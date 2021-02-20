@@ -2,7 +2,7 @@
   "name": "project",
   "version": "1.0.0",
   "description": "IA for a clasic game",
-  "main": "othello.js",
+  "main": "main.js",
   "dependencies": {
     "@tensorflow/tfjs": "^3.0.0",
     "@tensorflow/tfjs-node": "^3.0.0",
